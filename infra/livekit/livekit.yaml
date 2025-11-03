@@ -1,0 +1,22 @@
+# Minimal LiveKit config suitable for single-server deployment.
+# Docs: https://docs.livekit.io
+port: 7880
+tls:
+  enabled: false
+
+# Use environment-provided keys via LIVEKIT_KEYS env var or static keys here.
+# keys:
+#   <LIVEKIT_API_KEY>: <LIVEKIT_API_SECRET>
+
+rtc:
+  # When not using host networking, expose a UDP port range in docker-compose and set here:
+  port_range_start: 50000
+  port_range_end: 60000
+
+  # Prefer external TURN for clients behind restrictive NATs.
+  turn_servers:
+    - host: ${TURN_HOST:-localhost}
+      port: 3478
+      protocol: udp
+      username: ${TURN_USER:-turnuser}
+      credential: ${TURN_PASSWORD:-turnpass}

@@ -1,0 +1,78 @@
+version: "3.9"
+
+# NOTE:
+# - For Linux production, network_mode: host is recommended for LiveKit + coturn to avoid NAT traversal overhead.
+# - Docker Desktop on macOS/Windows does NOT support network_mode: host; use the port-mapped variant (see commented section).
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-adusei}
+      POSTGRES_USER: ${POSTGRES_USER:-adusei}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-adusei}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # For local dev; remove for prod host-network mode if desired
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    # Linux production recommendation:
+    # network_mode: host
+    # command: ["--config", "/etc/livekit/livekit.yaml"]
+    # macOS/Windows or general port-mapped setup:
+    ports:
+      - "7880:7880"      # WS / HTTP
+      - "7881:7881"      # HTTPS (if enabled)
+      - "50000-60000:50000-60000/udp" # RTP ports when not using host networking
+    volumes:
+      - ./livekit.yaml:/etc/livekit/livekit.yaml:ro
+    command: ["--config", "/etc/livekit/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}"
+
+  coturn:
+    image: coturn/coturn:4.6.2
+    restart: unless-stopped
+    # For Linux production prefer host networking:
+    # network_mode: host
+    # macOS/Windows or general port-mapped setup:
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "5349:5349/tcp"
+      - "49152-65535:49152-65535/udp"
+    command:
+      - -c
+      - /etc/coturn/turnserver.conf
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    environment:
+      TURN_REALM: "${TURN_REALM:-adusei-konnet}"
+      TURN_USER: "${TURN_USER:-turnuser}"
+      TURN_PASSWORD: "${TURN_PASSWORD:-turnpass}"
+      TURN_SECRET: "${TURN_SECRET:-turnsharedsecret}"
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_WS_URL: ${LIVEKIT_WS_URL:-ws://localhost:7880}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - postgres
+      - livekit
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

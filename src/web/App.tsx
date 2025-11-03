@@ -5,11 +5,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/web/components/ui/card";
-import { APITester } from "./APITester";
+// import { APITester } from "../APITester";
 import "./index.css";
 
 import logo from "./logo.svg";
 import reactLogo from "./react.svg";
+import { Chat } from "./chat";
+import { Call } from "./call";
 
 export function App() {
   return (
@@ -30,15 +32,25 @@ export function App() {
         <CardHeader className="gap-4">
           <CardTitle className="text-3xl font-bold">Bun + React</CardTitle>
           <CardDescription>
-            Edit{" "}
             <code className="rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono">
-              src/App.tsx
-            </code>{" "}
-            and save to test HMR
+              Chat Room
+            </code>
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <APITester />
+        <CardContent className="space-y-8 text-left">
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Call (LiveKit)</h2>
+            <Call />
+          </section>
+
+          <hr className="my-4" />
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Chat (WebSocket sample)</h2>
+            <Chat />
+          </section>
+
+          <hr className="my-4" />
         </CardContent>
       </Card>
     </div>
